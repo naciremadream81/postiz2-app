@@ -1,0 +1,300 @@
+# Do **not** use this yml for production. It is not up-to-date.
+# Use https://docs.postiz.com/installation/docker-compose
+# This is only for the dev environment
+
+version: '3.8'
+
+services:
+  postiz-postgres:
+    # ref: https://hub.docker.com/_/postgres
+    # Alpine variant chosen for smaller image size (40MB vs 300MB)
+    # Version 17 required for specific features
+    image: postgres:17-alpine # 17.0
+    container_name: postiz-postgres
+    restart: always
+    environment:
+      # Using environment variables with fallback defaults for flexibility
+      # Override these in a .env file for custom configurations
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postiz-local-pwd}
+      POSTGRES_USER: ${POSTGRES_USER:-postiz-local}
+      POSTGRES_DB: ${POSTGRES_DB:-postiz-db-local}
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    ports:
+      # Expose PostgreSQL port for local development and debugging
+      # Remove this port mapping in production or if only accessed internally
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - postiz-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postiz-local} -d ${POSTGRES_DB:-postiz-db-local}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postiz-redis:
+    # ref: https://hub.docker.com/_/redis
+    # Redis with password protection for security
+    image: redis:7.4-alpine # Pinned to specific version for reproducibility
+    container_name: postiz-redis
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD:-dev-redis-password} --appendonly yes
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-dev-redis-password}
+    volumes:
+      # Persist Redis data with AOF (Append Only File) enabled
+      - redis-data:/data
+    ports:
+      # Expose Redis port for local development
+      # Remove this port mapping if only accessed internally
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - postiz-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-dev-redis-password}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postiz-pg-admin:
+    # ref: https://hub.docker.com/r/dpage/pgadmin4/tags
+    # Pinned to specific version instead of 'latest' for reproducibility
+    image: dpage/pgadmin4:8.12
+    container_name: postiz-pg-admin
+    restart: always
+    ports:
+      - "${PGADMIN_PORT:-8081}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    volumes:
+      # Persist pgAdmin configuration and saved servers
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - postiz-network
+    depends_on:
+      postiz-postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postiz-redisinsight:
+    # ref: https://hub.docker.com/r/redis/redisinsight
+    # Pinned to specific version instead of 'latest' for reproducibility
+    image: redis/redisinsight:2.54
+    container_name: postiz-redisinsight
+    restart: always
+    ports:
+      - "${REDISINSIGHT_PORT:-5540}:5540"
+    volumes:
+      - redisinsight:/data
+    networks:
+      - postiz-network
+    depends_on:
+      postiz-redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Cloudflare Tunnel - Secure access to your application
+  # ---------------------------------------------------------------------------
+  postiz-cloudflared:
+    # ref: https://hub.docker.com/r/cloudflare/cloudflared
+    # Cloudflare Tunnel provides secure access without opening ports
+    image: cloudflare/cloudflared:2024.10.0
+    container_name: postiz-cloudflared
+    restart: unless-stopped
+    command: tunnel --credentials-file /etc/cloudflared/credentials.json run e2af6558-450a-4dfc-add6-839a3b628d79
+    environment:
+      # Tunnel configuration
+      TUNNEL_URL: https://postiz.swonger-armstrong.org
+    volumes:
+      # Mount credentials file only - dashboard controls routing
+      # See CLOUDFLARE_TUNNEL_SETUP.md for instructions
+      - ./cloudflared-credentials.json:/etc/cloudflared/credentials.json:ro
+    networks:
+      - postiz-network
+    depends_on:
+      - postiz-postgres
+      - postiz-redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.postiz.description: "Cloudflare Tunnel for secure external access"
+      com.postiz.environment: "development"
+      com.postiz.tunnel: "postiz.swonger-armstrong.org"
+
+  # ---------------------------------------------------------------------------
+  # Test Service - Simple HTTP service for testing tunnel connectivity
+  # ---------------------------------------------------------------------------
+  # This is a lightweight service to verify Cloudflare Tunnel → Traefik → Service routing
+  # Replace this with your actual Postiz frontend/backend services
+  whoami:
+    image: traefik/whoami:latest
+    container_name: postiz-whoami
+    restart: unless-stopped
+    networks:
+      - postiz-network
+    labels:
+      # Enable Traefik for this service
+      - "traefik.enable=true"
+      # HTTP router configuration
+      - "traefik.http.routers.whoami.rule=Host(`postiz.swonger-armstrong.org`)"
+      - "traefik.http.routers.whoami.entrypoints=web"
+      - "traefik.http.services.whoami.loadbalancer.server.port=80"
+      # Metadata
+      - "com.postiz.description=Test service for tunnel verification"
+      - "com.postiz.environment=development"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ---------------------------------------------------------------------------
+  # Traefik - Reverse Proxy & Load Balancer
+  # ---------------------------------------------------------------------------
+  # Traefik acts as the internal router between Cloudflare Tunnel and services
+  # Note: SSL/TLS is handled by Cloudflare Tunnel, Traefik handles HTTP routing
+  traefik:
+    image: "traefik:v2.11"
+    container_name: postiz-traefik
+    restart: unless-stopped
+    command:
+      # API and Dashboard (disable in production)
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      # Docker provider configuration
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=postiz-network"
+      # Entrypoints - Only HTTP since Cloudflare Tunnel handles TLS
+      - "--entrypoints.web.address=:80"
+      # Logging
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    ports:
+      # Expose port 80 so Cloudflare Dashboard can reach it
+      - "8000:80"    # Traefik HTTP (accessible from Cloudflare Dashboard config)
+      - "8080:8080"  # Traefik dashboard
+      # Port 8000 on host maps to port 80 in container
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - postiz-network
+    labels:
+      com.postiz.description: "Traefik reverse proxy for internal routing"
+      com.postiz.environment: "development"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+
+volumes:
+  postgres-volume:
+    driver: local
+    labels:
+      com.postiz.description: "PostgreSQL data for development"
+      com.postiz.environment: "development"
+  redis-data:
+    driver: local
+    labels:
+      com.postiz.description: "Redis persistence data"
+      com.postiz.environment: "development"
+  redisinsight:
+    driver: local
+    labels:
+      com.postiz.description: "RedisInsight configuration and data"
+      com.postiz.environment: "development"
+  pgadmin-data:
+    driver: local
+    labels:
+      com.postiz.description: "pgAdmin configuration and saved connections"
+      com.postiz.environment: "development"
+
+networks:
+  postiz-network:
+    driver: bridge
+    labels:
+      com.postiz.description: "Internal network for Postiz development services"
+      com.postiz.environment: "development"

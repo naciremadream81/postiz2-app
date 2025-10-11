@@ -1,0 +1,257 @@
+# =============================================================================
+# POSTIZ PRODUCTION DOCKER COMPOSE CONFIGURATION
+# =============================================================================
+# This is an EXAMPLE production configuration.
+# Customize this file according to your production requirements.
+#
+# IMPORTANT SECURITY NOTES:
+# 1. DO NOT use default passwords in production
+# 2. Use secrets management (Docker Secrets, Vault, AWS Secrets Manager)
+# 3. Remove unnecessary port exposures
+# 4. Enable TLS/SSL for all external connections
+# 5. Set up proper monitoring and logging
+# 6. Configure backups for databases
+# 7. Review and adjust resource limits for your workload
+#
+# Usage:
+#   docker-compose -f docker-compose.base.yaml -f docker-compose.prod.yaml up -d
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database - Production Configuration
+  # ---------------------------------------------------------------------------
+  postiz-postgres:
+    container_name: postiz-postgres-prod
+    restart: unless-stopped
+    # DO NOT expose ports in production unless absolutely necessary
+    # Access database through application or bastion host only
+    # ports:
+    #   - "5432:5432"  # REMOVE THIS IN PRODUCTION
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+        labels: "service=postgres,environment=production"
+    labels:
+      com.postiz.environment: "production"
+      com.postiz.backup: "required"
+      com.postiz.monitoring: "enabled"
+
+  # ---------------------------------------------------------------------------
+  # Redis - Production Configuration
+  # ---------------------------------------------------------------------------
+  postiz-redis:
+    container_name: postiz-redis-prod
+    restart: unless-stopped
+    # Additional Redis security settings for production
+    command: >
+      redis-server 
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --tcp-backlog 511
+      --timeout 0
+      --tcp-keepalive 300
+    # DO NOT expose Redis port in production
+    # ports:
+    #   - "6379:6379"  # REMOVE THIS IN PRODUCTION
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+        labels: "service=redis,environment=production"
+    labels:
+      com.postiz.environment: "production"
+      com.postiz.backup: "optional"
+      com.postiz.monitoring: "enabled"
+
+  # ---------------------------------------------------------------------------
+  # pgAdmin - REMOVE IN PRODUCTION OR SECURE PROPERLY
+  # ---------------------------------------------------------------------------
+  # For production, consider:
+  # 1. Removing pgAdmin entirely
+  # 2. Using a bastion host for database access
+  # 3. If keeping pgAdmin, put it behind VPN or auth gateway
+  
+  # postiz-pg-admin:
+  #   # Only enable if absolutely necessary
+  #   container_name: postiz-pgadmin-prod
+  #   profiles:
+  #     - admin-tools  # Requires explicit activation
+  #   restart: unless-stopped
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+  #   labels:
+  #     com.postiz.environment: "production"
+  #     traefik.enable: "true"
+  #     # Add Traefik/Nginx labels for HTTPS and authentication
+
+  # ---------------------------------------------------------------------------
+  # RedisInsight - REMOVE IN PRODUCTION OR SECURE PROPERLY
+  # ---------------------------------------------------------------------------
+  # postiz-redisinsight:
+  #   container_name: postiz-redisinsight-prod
+  #   profiles:
+  #     - admin-tools  # Requires explicit activation
+  #   restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Application Services (add your backend, frontend, workers here)
+  # ---------------------------------------------------------------------------
+  
+  # Example Backend Service
+  # postiz-backend:
+  #   image: postiz-backend:${VERSION:-latest}
+  #   container_name: postiz-backend-prod
+  #   restart: unless-stopped
+  #   environment:
+  #     NODE_ENV: production
+  #     DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postiz-postgres:5432/${POSTGRES_DB}
+  #     REDIS_URL: redis://:${REDIS_PASSWORD}@postiz-redis:6379
+  #     JWT_SECRET: ${JWT_SECRET}
+  #   depends_on:
+  #     postiz-postgres:
+  #       condition: service_healthy
+  #     postiz-redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - postiz-network
+  #   deploy:
+  #     replicas: 3  # For high availability
+  #     resources:
+  #       limits:
+  #         cpus: '2'
+  #         memory: 2G
+  #       reservations:
+  #         cpus: '0.5'
+  #         memory: 512M
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "100m"
+  #       max-file: "10"
+  #   labels:
+  #     com.postiz.environment: "production"
+  #     com.postiz.monitoring: "enabled"
+
+# =============================================================================
+# Volumes - Production Configuration
+# =============================================================================
+volumes:
+  postgres-volume:
+    driver: local
+    labels:
+      com.postiz.environment: "production"
+      com.postiz.backup: "daily"
+      com.postiz.retention: "30-days"
+    # For production, consider using:
+    # - External volumes
+    # - NFS mounts
+    # - Cloud storage (EBS, Azure Disk, GCE Persistent Disk)
+    # Example with external volume:
+    # external: true
+    # name: postiz-postgres-prod-volume
+
+  redis-data:
+    driver: local
+    labels:
+      com.postiz.environment: "production"
+      com.postiz.backup: "optional"
+
+# =============================================================================
+# Networks - Production Configuration
+# =============================================================================
+networks:
+  postiz-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+    labels:
+      com.postiz.environment: "production"
+
+# =============================================================================
+# Production Deployment Notes
+# =============================================================================
+# 
+# 1. SECRETS MANAGEMENT
+#    - Use Docker Secrets or external secrets management
+#    - Never commit .env files with production credentials
+#    - Rotate secrets regularly
+#
+# 2. BACKUP STRATEGY
+#    - Set up automated database backups
+#    - Test restore procedures regularly
+#    - Store backups in multiple locations
+#    - Example backup command:
+#      docker exec postiz-postgres-prod pg_dump -U $USER $DB > backup.sql
+#
+# 3. MONITORING
+#    - Set up Prometheus + Grafana for metrics
+#    - Configure alerts for critical services
+#    - Monitor resource usage
+#    - Track application performance
+#
+# 4. LOGGING
+#    - Use centralized logging (ELK, Splunk, CloudWatch)
+#    - Set appropriate log retention policies
+#    - Monitor logs for security events
+#
+# 5. SCALING
+#    - Use Docker Swarm or Kubernetes for orchestration
+#    - Configure load balancers (Traefik, Nginx, HAProxy)
+#    - Implement auto-scaling policies
+#    - Use CDN for static assets
+#
+# 6. SECURITY
+#    - Keep images updated
+#    - Scan for vulnerabilities regularly
+#    - Use network policies to restrict traffic
+#    - Implement rate limiting
+#    - Enable audit logging
+#
+# 7. HIGH AVAILABILITY
+#    - Run multiple replicas of services
+#    - Use PostgreSQL replication
+#    - Configure Redis Sentinel or Cluster
+#    - Implement circuit breakers
+#
+# 8. SSL/TLS
+#    - Terminate SSL at load balancer or reverse proxy
+#    - Use valid certificates (Let's Encrypt, commercial CA)
+#    - Enable HSTS
+#    - Configure proper cipher suites
+#
+# =============================================================================
+

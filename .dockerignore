@@ -1,0 +1,89 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+.pnpm-store
+
+# Build outputs
+dist
+build
+.next
+out
+*.log
+
+# Development files
+.git
+.gitignore
+.gitattributes
+*.md
+!README.md
+README.md
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment and configuration
+.env
+.env.*
+!.env.example
+*.local
+
+# Cloudflare Tunnel credentials
+cloudflared-credentials.json
+cloudflare-tunnel-config.yaml
+*.cfargotunnel.com.pem
+
+# Test and coverage
+coverage
+.nyc_output
+test-results
+reports
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+__tests__
+__mocks__
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+Jenkins
+*.Jenkinsfile
+
+# Documentation
+docs
+*.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+LICENSE
+SECURITY.md
+
+# Docker files (avoid recursive copying)
+Dockerfile*
+docker-compose*.yml
+docker-compose*.yaml
+.dockerignore
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.temp
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Misc
+.eslintcache
+.prettierignore
+sonar-project.properties
+railway.toml

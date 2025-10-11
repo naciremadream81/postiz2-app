@@ -1,0 +1,29 @@
+# Cloudflare Tunnel Configuration
+# This file configures how cloudflared routes traffic to your local services
+
+tunnel: e2af6558-450a-4dfc-add6-839a3b628d79
+credentials-file: /etc/cloudflared/credentials.json
+
+# Ingress rules define how traffic is routed
+# Rules are evaluated top to bottom, first match wins
+ingress:
+  # Route to Traefik which will handle internal routing
+  # Traefik will be the single entry point for all services
+  - hostname: postiz.swonger-armstrong.org
+    service: http://traefik:80
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+      httpHostHeader: postiz.swonger-armstrong.org
+  
+  # Catch-all rule (required as last rule)
+  - service: http_status:404
+
+# Optional: Configure logging
+# loglevel: info  # Options: debug, info, warn, error, fatal
+
+# Optional: Connection settings
+# retries: 3
+# grace-period: 30s
+# compression-quality: 0
+
