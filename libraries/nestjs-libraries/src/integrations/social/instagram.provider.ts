@@ -316,7 +316,7 @@ export class InstagramProvider
     const state = makeId(6);
     return {
       url:
-        'https://www.facebook.com/v20.0/dialog/oauth' +
+        'https://www.facebook.com/v21.0/dialog/oauth' +
         `?client_id=${process.env.FACEBOOK_APP_ID}` +
         `&redirect_uri=${encodeURIComponent(
           `${process.env.FRONTEND_URL}/integrations/social/instagram`
@@ -335,7 +335,7 @@ export class InstagramProvider
   }) {
     const getAccessToken = await (
       await fetch(
-        'https://graph.facebook.com/v20.0/oauth/access_token' +
+        'https://graph.facebook.com/v21.0/oauth/access_token' +
           `?client_id=${process.env.FACEBOOK_APP_ID}` +
           `&redirect_uri=${encodeURIComponent(
             `${process.env.FRONTEND_URL}/integrations/social/instagram${
@@ -349,7 +349,7 @@ export class InstagramProvider
 
     const { access_token, expires_in, ...all } = await (
       await fetch(
-        'https://graph.facebook.com/v20.0/oauth/access_token' +
+        'https://graph.facebook.com/v21.0/oauth/access_token' +
           '?grant_type=fb_exchange_token' +
           `&client_id=${process.env.FACEBOOK_APP_ID}` +
           `&client_secret=${process.env.FACEBOOK_APP_SECRET}` +
@@ -359,7 +359,7 @@ export class InstagramProvider
 
     const { data } = await (
       await fetch(
-        `https://graph.facebook.com/v20.0/me/permissions?access_token=${access_token}`
+        `https://graph.facebook.com/v21.0/me/permissions?access_token=${access_token}`
       )
     ).json();
 
@@ -374,7 +374,7 @@ export class InstagramProvider
       picture
     } = await (
       await fetch(
-        `https://graph.facebook.com/v20.0/me?fields=id,name,picture&access_token=${access_token}`
+        `https://graph.facebook.com/v21.0/me?fields=id,name,picture&access_token=${access_token}`
       )
     ).json();
 
@@ -392,7 +392,7 @@ export class InstagramProvider
   async pages(accessToken: string) {
     const { data } = await (
       await fetch(
-        `https://graph.facebook.com/v20.0/me/accounts?fields=id,instagram_business_account,username,name,picture.type(large)&access_token=${accessToken}&limit=500`
+        `https://graph.facebook.com/v21.0/me/accounts?fields=id,instagram_business_account,username,name,picture.type(large)&access_token=${accessToken}&limit=500`
       )
     ).json();
 
@@ -404,7 +404,7 @@ export class InstagramProvider
             pageId: p.id,
             ...(await (
               await fetch(
-                `https://graph.facebook.com/v20.0/${p.instagram_business_account.id}?fields=name,profile_picture_url&access_token=${accessToken}&limit=500`
+                `https://graph.facebook.com/v21.0/${p.instagram_business_account.id}?fields=name,profile_picture_url&access_token=${accessToken}&limit=500`
               )
             ).json()),
             id: p.instagram_business_account.id,
@@ -426,13 +426,13 @@ export class InstagramProvider
   ) {
     const { access_token, ...all } = await (
       await fetch(
-        `https://graph.facebook.com/v20.0/${data.pageId}?fields=access_token,name,picture.type(large)&access_token=${accessToken}`
+        `https://graph.facebook.com/v21.0/${data.pageId}?fields=access_token,name,picture.type(large)&access_token=${accessToken}`
       )
     ).json();
 
     const { id, name, profile_picture_url, username } = await (
       await fetch(
-        `https://graph.facebook.com/v20.0/${data.id}?fields=username,name,profile_picture_url&access_token=${accessToken}`
+        `https://graph.facebook.com/v21.0/${data.id}?fields=username,name,profile_picture_url&access_token=${accessToken}`
       )
     ).json();
 
@@ -491,7 +491,7 @@ export class InstagramProvider
         console.log(collaborators);
         const { id: photoId } = await (
           await this.fetch(
-            `https://${type}/v20.0/${id}/media?${mediaType}${isCarousel}${collaborators}&access_token=${accessToken}${caption}`,
+            `https://${type}/v21.0/${id}/media?${mediaType}${isCarousel}${collaborators}&access_token=${accessToken}${caption}`,
             {
               method: 'POST',
             }
@@ -503,7 +503,7 @@ export class InstagramProvider
         while (status === 'IN_PROGRESS') {
           const { status_code } = await (
             await this.fetch(
-              `https://${type}/v20.0/${photoId}?access_token=${accessToken}&fields=status_code`,
+              `https://${type}/v21.0/${photoId}?access_token=${accessToken}&fields=status_code`,
               undefined,
               '',
               0,
@@ -526,7 +526,7 @@ export class InstagramProvider
     if (medias.length === 1) {
       const { id: mediaId } = await (
         await this.fetch(
-          `https://${type}/v20.0/${id}/media_publish?creation_id=${medias[0]}&access_token=${accessToken}&field=id`,
+          `https://${type}/v21.0/${id}/media_publish?creation_id=${medias[0]}&access_token=${accessToken}&field=id`,
           {
             method: 'POST',
           }
@@ -537,7 +537,7 @@ export class InstagramProvider
 
       const { permalink } = await (
         await this.fetch(
-          `https://${type}/v20.0/${mediaId}?fields=permalink&access_token=${accessToken}`
+          `https://${type}/v21.0/${mediaId}?fields=permalink&access_token=${accessToken}`
         )
       ).json();
 
@@ -552,7 +552,7 @@ export class InstagramProvider
     } else {
       const { id: containerId, ...all3 } = await (
         await this.fetch(
-          `https://${type}/v20.0/${id}/media?caption=${encodeURIComponent(
+          `https://${type}/v21.0/${id}/media?caption=${encodeURIComponent(
             firstPost?.message
           )}&media_type=CAROUSEL&children=${encodeURIComponent(
             medias.join(',')
@@ -567,7 +567,7 @@ export class InstagramProvider
       while (status === 'IN_PROGRESS') {
         const { status_code } = await (
           await this.fetch(
-            `https://${type}/v20.0/${containerId}?fields=status_code&access_token=${accessToken}`,
+            `https://${type}/v21.0/${containerId}?fields=status_code&access_token=${accessToken}`,
             undefined,
             '',
             0,
@@ -580,7 +580,7 @@ export class InstagramProvider
 
       const { id: mediaId, ...all4 } = await (
         await this.fetch(
-          `https://${type}/v20.0/${id}/media_publish?creation_id=${containerId}&access_token=${accessToken}&field=id`,
+          `https://${type}/v21.0/${id}/media_publish?creation_id=${containerId}&access_token=${accessToken}&field=id`,
           {
             method: 'POST',
           }
@@ -591,7 +591,7 @@ export class InstagramProvider
 
       const { permalink } = await (
         await this.fetch(
-          `https://${type}/v20.0/${mediaId}?fields=permalink&access_token=${accessToken}`
+          `https://${type}/v21.0/${mediaId}?fields=permalink&access_token=${accessToken}`
         )
       ).json();
 
@@ -608,7 +608,7 @@ export class InstagramProvider
     for (const post of theRest) {
       const { id: commentId } = await (
         await this.fetch(
-          `https://${type}/v20.0/${containerIdGlobal}/comments?message=${encodeURIComponent(
+          `https://${type}/v21.0/${containerIdGlobal}/comments?message=${encodeURIComponent(
             post.message
           )}&access_token=${accessToken}`,
           {
@@ -725,7 +725,7 @@ export class InstagramProvider
 
   music(accessToken: string, data: { q: string }) {
     return this.fetch(
-      `https://graph.facebook.com/v20.0/music/search?q=${encodeURIComponent(
+      `https://graph.facebook.com/v21.0/music/search?q=${encodeURIComponent(
         data.q
       )}&access_token=${accessToken}`
     );

@@ -20,6 +20,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
     'pages_manage_posts',
     'pages_manage_engagement',
     'pages_read_engagement',
+    'pages_read_user_content',
     'read_insights',
   ];
   override maxConcurrentJob = 3; // Facebook has reasonable rate limits
@@ -126,6 +127,36 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
       };
     }
 
+    // Video format errors
+    if (body.indexOf('1366045') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Video format not supported or file size too large',
+      };
+    }
+
+    if (body.indexOf('1366047') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Video duration exceeds maximum allowed length',
+      };
+    }
+
+    // API limits
+    if (body.indexOf('4') > -1 && body.indexOf('API Error Code') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'API request limit reached, please try again later',
+      };
+    }
+
+    if (body.indexOf('17') > -1 && body.indexOf('User request limit reached') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'User request limit reached, please try again later',
+      };
+    }
+
     // Service errors - checking specific subcodes first
     if (body.indexOf('1363047') > -1) {
       return {
@@ -160,7 +191,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
     const state = makeId(6);
     return {
       url:
-        'https://www.facebook.com/v20.0/dialog/oauth' +
+        'https://www.facebook.com/v21.0/dialog/oauth' +
         `?client_id=${process.env.FACEBOOK_APP_ID}` +
         `&redirect_uri=${encodeURIComponent(
           `${process.env.FRONTEND_URL}/integrations/social/facebook`
@@ -200,7 +231,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
   }) {
     const getAccessToken = await (
       await fetch(
-        'https://graph.facebook.com/v20.0/oauth/access_token' +
+        'https://graph.facebook.com/v21.0/oauth/access_token' +
           `?client_id=${process.env.FACEBOOK_APP_ID}` +
           `&redirect_uri=${encodeURIComponent(
             `${process.env.FRONTEND_URL}/integrations/social/facebook${
@@ -214,7 +245,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
 
     const { access_token } = await (
       await fetch(
-        'https://graph.facebook.com/v20.0/oauth/access_token' +
+        'https://graph.facebook.com/v21.0/oauth/access_token' +
           '?grant_type=fb_exchange_token' +
           `&client_id=${process.env.FACEBOOK_APP_ID}` +
           `&client_secret=${process.env.FACEBOOK_APP_SECRET}` +
@@ -224,7 +255,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
 
     const { data } = await (
       await fetch(
-        `https://graph.facebook.com/v20.0/me/permissions?access_token=${access_token}`
+        `https://graph.facebook.com/v21.0/me/permissions?access_token=${access_token}`
       )
     ).json();
 
@@ -239,7 +270,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
       picture
     } = await (
       await fetch(
-        `https://graph.facebook.com/v20.0/me?fields=id,name,picture&access_token=${access_token}`
+        `https://graph.facebook.com/v21.0/me?fields=id,name,picture&access_token=${access_token}`
       )
     ).json();
 
@@ -257,7 +288,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
   async pages(accessToken: string) {
     const { data } = await (
       await fetch(
-        `https://graph.facebook.com/v20.0/me/accounts?fields=id,username,name,picture.type(large)&access_token=${accessToken}`
+        `https://graph.facebook.com/v21.0/me/accounts?fields=id,username,name,picture.type(large)&access_token=${accessToken}`
       )
     ).json();
 
@@ -275,7 +306,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
       },
     } = await (
       await fetch(
-        `https://graph.facebook.com/v20.0/${pageId}?fields=username,access_token,name,picture.type(large)&access_token=${accessToken}`
+        `https://graph.facebook.com/v21.0/${pageId}?fields=username,access_token,name,picture.type(large)&access_token=${accessToken}`
       )
     ).json();
 
@@ -298,29 +329,38 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
     let finalId = '';
     let finalUrl = '';
     if ((firstPost?.media?.[0]?.path?.indexOf('mp4') || -2) > -1) {
+      // Post video as Reel by default for better reach
+      const videoPayload: any = {
+        file_url: firstPost?.media?.[0]?.path!,
+        description: firstPost.message,
+        published: true,
+      };
+
+      // Add optional video title if provided
+      if (firstPost?.settings?.videoTitle) {
+        videoPayload.title = firstPost.settings.videoTitle;
+      }
+
       const {
         id: videoId,
         permalink_url,
         ...all
       } = await (
         await this.fetch(
-          `https://graph.facebook.com/v20.0/${id}/videos?access_token=${accessToken}&fields=id,permalink_url`,
+          `https://graph.facebook.com/v21.0/${id}/videos?access_token=${accessToken}&fields=id,permalink_url`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              file_url: firstPost?.media?.[0]?.path!,
-              description: firstPost.message,
-              published: true,
-            }),
+            body: JSON.stringify(videoPayload),
           },
           'upload mp4'
         )
       ).json();
 
-      finalUrl = 'https://www.facebook.com/reel/' + videoId;
+      // Facebook automatically posts vertical videos as Reels
+      finalUrl = permalink_url || ('https://www.facebook.com/reel/' + videoId);
       finalId = videoId;
     } else {
       const uploadPhotos = !firstPost?.media?.length
@@ -329,7 +369,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
             firstPost.media.map(async (media) => {
               const { id: photoId } = await (
                 await this.fetch(
-                  `https://graph.facebook.com/v20.0/${id}/photos?access_token=${accessToken}`,
+                  `https://graph.facebook.com/v21.0/${id}/photos?access_token=${accessToken}`,
                   {
                     method: 'POST',
                     headers: {
@@ -354,7 +394,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
         ...all
       } = await (
         await this.fetch(
-          `https://graph.facebook.com/v20.0/${id}/feed?access_token=${accessToken}&fields=id,permalink_url`,
+          `https://graph.facebook.com/v21.0/${id}/feed?access_token=${accessToken}&fields=id,permalink_url`,
           {
             method: 'POST',
             headers: {
@@ -382,7 +422,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
     for (const comment of comments) {
       const data = await (
         await this.fetch(
-          `https://graph.facebook.com/v20.0/${commentId}/comments?access_token=${accessToken}&fields=id,permalink_url`,
+          `https://graph.facebook.com/v21.0/${commentId}/comments?access_token=${accessToken}&fields=id,permalink_url`,
           {
             method: 'POST',
             headers: {
@@ -428,7 +468,7 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
 
     const { data } = await (
       await fetch(
-        `https://graph.facebook.com/v20.0/${id}/insights?metric=page_impressions_unique,page_posts_impressions_unique,page_post_engagements,page_daily_follows,page_video_views&access_token=${accessToken}&period=day&since=${since}&until=${until}`
+        `https://graph.facebook.com/v21.0/${id}/insights?metric=page_impressions_unique,page_posts_impressions_unique,page_post_engagements,page_daily_follows,page_video_views&access_token=${accessToken}&period=day&since=${since}&until=${until}`
       )
     ).json();
 

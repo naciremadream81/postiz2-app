@@ -1,0 +1,41 @@
+# Cloudflare Tunnel Configuration Template
+# Copy this file to cloudflare-tunnel-config.yaml and fill in your actual values
+# Never commit cloudflare-tunnel-config.yaml to version control!
+
+tunnel: YOUR_TUNNEL_ID_HERE
+# Option 1: Using token (recommended - simpler)
+# Get your token via: cloudflared tunnel token YOUR_TUNNEL_ID
+token: YOUR_TUNNEL_TOKEN_HERE
+
+# Option 2: Using credentials file (alternative)
+# credentials-file: /etc/cloudflared/credentials.json
+
+# Ingress rules define how traffic is routed
+# Rules are evaluated top to bottom, first match wins
+ingress:
+  # Route postiz domain to Traefik
+  - hostname: postiz.swonger-armstrong.org
+    service: http://postiz-traefik:80
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+      httpHostHeader: postiz.swonger-armstrong.org
+  
+  # Route n8n domain to Traefik
+  - hostname: n8n.swonger-armstrong.org
+    service: http://postiz-traefik:80
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+      httpHostHeader: n8n.swonger-armstrong.org
+  
+  # Catch-all rule (required as last rule)
+  - service: http_status:404
+
+# Optional: Configure logging
+loglevel: info  # Options: debug, info, warn, error, fatal
+
+# Optional: Connection settings
+retries: 3
+grace-period: 30s
+

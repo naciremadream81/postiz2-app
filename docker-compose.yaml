@@ -1,29 +1,42 @@
 services:
-   traefik:
-    image: "traefik"
-    restart: always
+  traefik:
+    image: "traefik:v2.11"
+    container_name: postiz-traefik
+    restart: unless-stopped
     command:
+      # API and Dashboard
       - "--api.insecure=true"
+      - "--api.dashboard=true"
+      # Docker provider configuration
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      # "--providers.docker.network=postiz-network"
+      # Entrypoints - Only HTTP since Cloudflare Tunnel handles TLS
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
-      - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
-      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+      # Logging
+      - "--log.level=INFO"
+      - "--accesslog=true"
     ports:
-      - "80:80"
-      - "443:443"
+      - "8000:80"    # HTTP for Cloudflare Tunnel (mapped to 8000 to avoid conflict)
+      - "8888:8080"  # Traefik Dashboard
     volumes:
-      - traefik_data:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - postiz-network
+      - web-proxy
 
   postiz:
     image: ghcr.io/gitroomhq/postiz-app:latest
     container_name: postiz
     restart: always
+    labels:
+      # Enable Traefik for this service
+      - "traefik.enable=true"
+      # HTTP router configuration
+      - "traefik.http.routers.postiz.rule=Host(`postiz.swonger-armstrong.org`)"
+      - "traefik.http.routers.postiz.entrypoints=web"
+      - "traefik.http.services.postiz.loadbalancer.server.port=5000"
+      - "traefik.docker.network=web-proxy"
     environment:
       # === Required Settings
       MAIN_URL: "https://postiz.swonger-armstrong.org"
@@ -62,12 +75,12 @@ services:
       BEEHIIVE_PUBLICATION_ID: ""
       THREADS_APP_ID: ""
       THREADS_APP_SECRET: ""
-      FACEBOOK_APP_ID: ""
-      FACEBOOK_APP_SECRET: ""
-      YOUTUBE_CLIENT_ID: ""
-      YOUTUBE_CLIENT_SECRET: ""
-      TIKTOK_CLIENT_ID: ""
-      TIKTOK_CLIENT_SECRET: ""
+      FACEBOOK_APP_ID: "1995461481215554"
+      FACEBOOK_APP_SECRET: "2664d28214851466c44d23b76a23dd7c"
+      YOUTUBE_CLIENT_ID: "827306053657-d7e1665e19dmpsbv4n3hf4sgn92m7obu.apps.googleusercontent.com"
+      YOUTUBE_CLIENT_SECRET: "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"
+      TIKTOK_client_key: "sbawigvd3jv5kohkix"
+      TIKTOK_CLIENT_SECRET: "hNkNn9A6X1lS2HoaYAOnjs3HDuqUSWqA"
       PINTEREST_CLIENT_ID: ""
       PINTEREST_CLIENT_SECRET: ""
       DRIBBBLE_CLIENT_ID: ""
@@ -86,12 +99,12 @@ services:
       NEXT_PUBLIC_POSTIZ_OAUTH_DISPLAY_NAME: "Authentik"
       NEXT_PUBLIC_POSTIZ_OAUTH_LOGO_URL: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/authentik.png"
       POSTIZ_GENERIC_OAUTH: "false"
-      POSTIZ_OAUTH_URL: "https://auth.example.com"
-      POSTIZ_OAUTH_AUTH_URL: "https://auth.example.com/application/o/authorize"
-      POSTIZ_OAUTH_TOKEN_URL: "https://auth.example.com/application/o/token"
-      POSTIZ_OAUTH_USERINFO_URL: "https://authentik.example.com/application/o/userinfo"
-      POSTIZ_OAUTH_CLIENT_ID: ""
-      POSTIZ_OAUTH_CLIENT_SECRET: ""
+      POSTIZ_OAUTH_URL: "https://authentik.swonger-armstrong.org"
+      POSTIZ_OAUTH_AUTH_URL: "https://authentik.swonger-armstrong.org/application/o/authorize"
+      POSTIZ_OAUTH_TOKEN_URL: "https://authentik.swonger-armstrong.org/application/o/token"
+      POSTIZ_OAUTH_USERINFO_URL: "https://authentik.swonger-armstrong.org/application/o/userinfo"
+      POSTIZ_OAUTH_CLIENT_ID: "zsbq3UIyrUFqzDSr7r890HZTVuwUDGyo97Vd1O6p"
+      POSTIZ_OAUTH_CLIENT_SECRET: "IB04CSYdtotQQwdc15KmT8hxN544auraPpaiyDJh8vDTbDGBWWjKh185oWj6bIyxFELrs2hnH9leLIpAJ0CVKa0mA9FZNq58R6chxNb26wgnZbkpjUzMvbCGR6MBptXT"
       # POSTIZ_OAUTH_SCOPE: "openid profile email"  # Optional: uncomment to override default scope
  
       # === Misc Settings
@@ -129,12 +142,137 @@ services:
       - 5000:5000
     networks:
       - postiz-network
+      - web-proxy
     depends_on:
       postiz-postgres:
         condition: service_healthy
       postiz-redis:
         condition: service_healthy
  
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: postiz-cloudflared
+    restart: unless-stopped
+    command: tunnel --config /etc/cloudflared/config.yaml run
+    volumes:
+      - ./cloudflare-tunnel-config.yaml:/etc/cloudflared/config.yaml:ro
+    networks:
+      - postiz-network
+    depends_on:
+      - traefik
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: postiz-n8n
+    restart: always
+    labels:
+      # Enable Traefik for this service
+      - "traefik.enable=true"
+      # HTTP router configuration
+      - "traefik.http.routers.n8n.rule=Host(`n8n.swonger-armstrong.org`)"
+      - "traefik.http.routers.n8n.entrypoints=web"
+      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+      - "traefik.docker.network=web-proxy"
+      # Reverse proxy headers for n8n
+      - "traefik.http.routers.n8n.middlewares=n8n-headers"
+      - "traefik.http.middlewares.n8n-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.n8n-headers.headers.customrequestheaders.X-Forwarded-Host=n8n.swonger-armstrong.org"
+      - "traefik.http.middlewares.n8n-headers.headers.sslredirect=false"
+    environment:
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_HOST=n8n.swonger-armstrong.org
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - N8N_RUNNERS_ENABLED=true
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://n8n.swonger-armstrong.org/
+      - GENERIC_TIMEZONE=America/New_York
+      - TZ=America/New_York
+    volumes:
+      - n8n-data:/home/node/.n8n
+      - ./local-files:/files
+    networks:
+      - postiz-network
+      - web-proxy
+
+  # ---------------------------------------------------------------------------
+  # Guacamole - Clientless Remote Desktop Gateway
+  # ---------------------------------------------------------------------------
+  guacamole-db:
+    image: mariadb:10.11
+    container_name: postiz-guacamole-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: guacamole-root-password
+      MYSQL_DATABASE: guacamole_db
+      MYSQL_USER: guacamole_user
+      MYSQL_PASSWORD: guacamole-password
+    volumes:
+      - guacamole-db-data:/var/lib/mysql
+    networks:
+      - postiz-network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  guacd:
+    image: guacamole/guacd:1.5.5
+    container_name: postiz-guacd
+    restart: unless-stopped
+    volumes:
+      - guacamole-drive:/drive
+      - guacamole-record:/record
+    networks:
+      - postiz-network
+
+  guacamole:
+    image: guacamole/guacamole:1.5.5
+    container_name: postiz-guacamole
+    restart: unless-stopped
+    labels:
+      # Enable Traefik for this service
+      - "traefik.enable=true"
+      # HTTP router configuration
+      - "traefik.http.routers.guacamole.rule=Host(`guac.swonger-armstrong.org`)"
+      - "traefik.http.routers.guacamole.entrypoints=web"
+      - "traefik.http.services.guacamole.loadbalancer.server.port=8080"
+      - "traefik.docker.network=web-proxy"
+      # Reverse proxy headers and path rewrite (map / to /guacamole/)
+      - "traefik.http.routers.guacamole.middlewares=guacamole-headers,guacamole-pathrewrite"
+      - "traefik.http.middlewares.guacamole-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.guacamole-headers.headers.customrequestheaders.X-Forwarded-Host=guac.swonger-armstrong.org"
+      - "traefik.http.middlewares.guacamole-headers.headers.sslredirect=false"
+      # Rewrite paths: ^(.*) -> /guacamole$1
+      - "traefik.http.middlewares.guacamole-pathrewrite.replacepathregex.regex=^(.*)"
+      - "traefik.http.middlewares.guacamole-pathrewrite.replacepathregex.replacement=/guacamole$$1"
+    environment:
+      GUACD_HOSTNAME: guacd
+      GUACD_PORT: 4822
+      MYSQL_HOSTNAME: guacamole-db
+      MYSQL_DATABASE: guacamole_db
+      MYSQL_USER: guacamole_user
+      MYSQL_PASSWORD: guacamole-password
+      # Optional: Set timezone
+      TZ: America/New_York
+    volumes:
+      - guacamole-drive:/drive
+      - guacamole-record:/record
+    networks:
+      - postiz-network
+      - web-proxy
+    depends_on:
+      guacamole-db:
+        condition: service_healthy
+      guacd:
+        condition: service_started
+
   postiz-postgres:
     image: postgres:17-alpine
     container_name: postiz-postgres
@@ -168,18 +306,35 @@ services:
  
  
 volumes:
+  traefik_data:
+    external: false
+
   postgres-volume:
     external: false
- 
+
   postiz-redis-data:
     external: false
- 
+
   postiz-config:
     external: false
- 
+
   postiz-uploads:
+    external: false
+
+  n8n-data:
+    external: false
+
+  guacamole-db-data:
+    external: false
+
+  guacamole-drive:
+    external: false
+
+  guacamole-record:
     external: false
  
 networks:
   postiz-network:
     external: false
+  web-proxy:
+    external: true

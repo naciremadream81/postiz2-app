@@ -8,8 +8,6 @@
 #   docker-compose -f docker-compose.base.yaml -f docker-compose.dev.yaml up
 # =============================================================================
 
-version: '3.8'
-
 services:
   # ---------------------------------------------------------------------------
   # PostgreSQL Database

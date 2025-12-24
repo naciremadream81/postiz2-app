@@ -2,8 +2,6 @@
 # Use https://docs.postiz.com/installation/docker-compose
 # This is only for the dev environment
 
-version: '3.8'
-
 services:
   postiz-postgres:
     # ref: https://hub.docker.com/_/postgres
@@ -157,19 +155,19 @@ services:
     image: cloudflare/cloudflared:2024.10.0
     container_name: postiz-cloudflared
     restart: unless-stopped
-    command: tunnel --credentials-file /etc/cloudflared/credentials.json run e2af6558-450a-4dfc-add6-839a3b628d79
-    environment:
-      # Tunnel configuration
-      TUNNEL_URL: https://postiz.swonger-armstrong.org
+    # Use config-based approach for consistency with docker-compose.yaml
+    # This allows local config file to control routing instead of Dashboard
+    command: tunnel --config /etc/cloudflared/config.yaml run
     volumes:
-      # Mount credentials file only - dashboard controls routing
+      # Mount config file (which contains token or credentials-file reference)
       # See CLOUDFLARE_TUNNEL_SETUP.md for instructions
-      - ./cloudflared-credentials.json:/etc/cloudflared/credentials.json:ro
+      - ./cloudflare-tunnel-config.yaml:/etc/cloudflared/config.yaml:ro
     networks:
       - postiz-network
     depends_on:
       - postiz-postgres
       - postiz-redis
+      # Note: If using config-based routing through Traefik, also depends on traefik service
     deploy:
       resources:
         limits:

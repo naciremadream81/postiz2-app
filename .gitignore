@@ -61,5 +61,6 @@ i18n.cache
 
 # Cloudflare Tunnel credentials (never commit!)
 cloudflared-credentials.json
+cloudflare-tunnel-config.yaml
 *.cfargotunnel.com.pem
 cloudflared.log

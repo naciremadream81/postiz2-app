@@ -199,6 +199,42 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
       };
     }
 
+    // Additional error handling for common API errors
+    if (body.indexOf('invalid_video_file') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Invalid video file format. Supported formats: MP4, MOV, MPEG, WEBM',
+      };
+    }
+
+    if (body.indexOf('video_too_large') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Video file size exceeds maximum allowed size',
+      };
+    }
+
+    if (body.indexOf('too_many_files') > -1) {
+      return {
+        type: 'bad-body' as const,
+        value: 'Too many files in request. Maximum 35 photos for photo posts',
+      };
+    }
+
+    if (body.indexOf('invalid_token') > -1) {
+      return {
+        type: 'refresh-token' as const,
+        value: 'Invalid or expired token, please re-authenticate',
+      };
+    }
+
+    if (body.indexOf('permission_denied') > -1) {
+      return {
+        type: 'refresh-token' as const,
+        value: 'Permission denied. Please re-authenticate with required permissions',
+      };
+    }
+
     if (body.indexOf('TikTok API error') > -1) {
       return {
         type: 'bad-body' as const,
