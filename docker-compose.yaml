@@ -245,13 +245,12 @@ services:
       - "traefik.http.services.guacamole.loadbalancer.server.port=8080"
       - "traefik.docker.network=web-proxy"
       # Reverse proxy headers and path rewrite (map / to /guacamole/)
-      - "traefik.http.routers.guacamole.middlewares=guacamole-headers,guacamole-pathrewrite"
+      - "traefik.http.routers.guacamole.middlewares=guacamole-headers,guacamole-addprefix"
       - "traefik.http.middlewares.guacamole-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
       - "traefik.http.middlewares.guacamole-headers.headers.customrequestheaders.X-Forwarded-Host=guac.swonger-armstrong.org"
       - "traefik.http.middlewares.guacamole-headers.headers.sslredirect=false"
-      # Rewrite paths: ^(.*) -> /guacamole$1
-      - "traefik.http.middlewares.guacamole-pathrewrite.replacepathregex.regex=^(.*)"
-      - "traefik.http.middlewares.guacamole-pathrewrite.replacepathregex.replacement=/guacamole$$1"
+      # Add /guacamole prefix to all requests (Guacamole serves at /guacamole/)
+      - "traefik.http.middlewares.guacamole-addprefix.addprefix.prefix=/guacamole"
     environment:
       GUACD_HOSTNAME: guacd
       GUACD_PORT: 4822
