@@ -143,14 +143,18 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
     }
 
     // API limits
-    if (body.indexOf('4') > -1 && body.indexOf('API Error Code') > -1) {
+    // Check for error code 4 (API request limit) using regex to avoid false positives
+    // Matches patterns like "code":4 or "code": 4 in JSON responses
+    if (/"code"\s*:\s*4\b/.test(body) || /"error_code"\s*:\s*4\b/.test(body)) {
       return {
         type: 'bad-body' as const,
         value: 'API request limit reached, please try again later',
       };
     }
 
-    if (body.indexOf('17') > -1 && body.indexOf('User request limit reached') > -1) {
+    // Check for error code 17 (User request limit) using regex to avoid false positives
+    // Matches patterns like "code":17 or "code": 17 in JSON responses
+    if (/"code"\s*:\s*17\b/.test(body) || /"error_code"\s*:\s*17\b/.test(body)) {
       return {
         type: 'bad-body' as const,
         value: 'User request limit reached, please try again later',
