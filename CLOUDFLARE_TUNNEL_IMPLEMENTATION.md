@@ -1,7 +1,7 @@
 # Cloudflare Tunnel Implementation Summary
 
 **Date**: October 10, 2025  
-**Public URL**: https://postiz.swonger-armstrong.org  
+**Public URL**: https://postiz.permitpro.icu  
 **Status**: ✅ Ready for Configuration
 
 ---
@@ -97,8 +97,8 @@ postiz-cloudflared:
 ### Ingress Rules
 
 Default configuration routes:
-- `https://postiz.swonger-armstrong.org` → Frontend (port 3000)
-- `https://postiz.swonger-armstrong.org/api/*` → Backend (port 4200)
+- `https://postiz.permitpro.icu` → Frontend (port 3000)
+- `https://postiz.permitpro.icu/api/*` → Backend (port 4200)
 
 ---
 
@@ -109,7 +109,7 @@ Default configuration routes:
 Before you start, ensure you have:
 
 1. ✅ Cloudflare account (free tier works)
-2. ✅ Domain `swonger-armstrong.org` added to Cloudflare
+2. ✅ Domain `permitpro.icu` added to Cloudflare
 3. ✅ Docker and Docker Compose running
 4. ✅ Postiz services running
 
@@ -137,7 +137,7 @@ docker-compose -f docker-compose.dev.yaml up -d
 docker logs -f postiz-cloudflared
 
 # 7. Test
-curl https://postiz.swonger-armstrong.org
+curl https://postiz.permitpro.icu
 ```
 
 ---
@@ -198,7 +198,7 @@ chmod 600 cloudflared-credentials.json
 
 ```yaml
 ingress:
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-frontend:3000
   - service: http_status:404
 ```
@@ -209,9 +209,9 @@ ingress:
 
 ```yaml
 ingress:
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-frontend:3000
-  - hostname: api.postiz.swonger-armstrong.org
+  - hostname: api.postiz.permitpro.icu
     service: http://postiz-backend:4200
   - service: http_status:404
 ```
@@ -220,10 +220,10 @@ ingress:
 
 ```yaml
 ingress:
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     path: /api/*
     service: http://postiz-backend:4200
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-frontend:3000
   - service: http_status:404
 ```
@@ -232,13 +232,13 @@ ingress:
 
 ```yaml
 ingress:
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     path: /ws/*
     service: http://postiz-backend:4200
     originRequest:
       noTLSVerify: true
       disableChunkedEncoding: true
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-frontend:3000
   - service: http_status:404
 ```
@@ -354,20 +354,20 @@ curl http://localhost:4200/api/health
 
 ```bash
 # Test external access
-curl https://postiz.swonger-armstrong.org
+curl https://postiz.permitpro.icu
 
 # Test with headers
-curl -v https://postiz.swonger-armstrong.org
+curl -v https://postiz.permitpro.icu
 
 # Test API endpoint
-curl https://postiz.swonger-armstrong.org/api/health
+curl https://postiz.permitpro.icu/api/health
 ```
 
 ### Verify SSL/TLS
 
 ```bash
 # Check certificate
-openssl s_client -connect postiz.swonger-armstrong.org:443 -servername postiz.swonger-armstrong.org
+openssl s_client -connect postiz.permitpro.icu:443 -servername postiz.permitpro.icu
 
 # Should show Cloudflare certificate
 ```
@@ -409,14 +409,14 @@ grace-period: 30s
 Share your local development with team members:
 
 ```yaml
-- hostname: dev.postiz.swonger-armstrong.org
+- hostname: dev.postiz.permitpro.icu
   service: http://postiz-frontend:3000
 ```
 
 ### Staging Environment
 
 ```yaml
-- hostname: staging.postiz.swonger-armstrong.org
+- hostname: staging.postiz.permitpro.icu
   service: http://postiz-frontend:3000
 ```
 
@@ -560,7 +560,7 @@ Your Postiz application now has:
 ✅ **Production-ready** configuration  
 ✅ **Complete documentation** for setup and troubleshooting  
 
-**Your URL**: https://postiz.swonger-armstrong.org
+**Your URL**: https://postiz.permitpro.icu
 
 **Status**: Ready to configure and deploy! 🚀
 

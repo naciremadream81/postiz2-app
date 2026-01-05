@@ -9,12 +9,12 @@ credentials-file: /etc/cloudflared/credentials.json
 ingress:
   # Route to Traefik which will handle internal routing
   # Traefik will be the single entry point for all services
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://traefik:80
     originRequest:
       noTLSVerify: true
       connectTimeout: 30s
-      httpHostHeader: postiz.swonger-armstrong.org
+      httpHostHeader: postiz.permitpro.icu
   
   # Catch-all rule (required as last rule)
   - service: http_status:404

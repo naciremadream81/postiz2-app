@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide will help you set up Cloudflare Tunnel to securely expose your Postiz application at `https://postiz.swonger-armstrong.org` without opening any ports on your firewall.
+This guide will help you set up Cloudflare Tunnel to securely expose your Postiz application at `https://postiz.permitpro.icu` without opening any ports on your firewall.
 
 ## 🎯 What is Cloudflare Tunnel?
 
@@ -17,7 +17,7 @@ Cloudflare Tunnel (formerly Argo Tunnel) creates a secure, outbound-only connect
 ## 📋 Prerequisites
 
 1. **Cloudflare Account** (free tier works)
-2. **Domain managed by Cloudflare** (`swonger-armstrong.org`)
+2. **Domain managed by Cloudflare** (`permitpro.icu`)
 3. **Docker and Docker Compose** (already set up)
 4. **Cloudflare Tunnel created** (we'll do this below)
 
@@ -64,7 +64,7 @@ The dashboard will show installation instructions. **Skip this step** - we're us
 2. Click **"Add a public hostname"**
 3. Configure:
    - **Subdomain**: `postiz`
-   - **Domain**: `swonger-armstrong.org`
+   - **Domain**: `permitpro.icu`
    - **Path**: (leave empty)
    - **Service Type**: `HTTP`
    - **URL**: `postiz-frontend:3000` (or your frontend service name)
@@ -114,7 +114,7 @@ Update the ingress rules to match your services:
 ```yaml
 ingress:
   # Route all traffic to your frontend
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-frontend:3000
     originRequest:
       noTLSVerify: true
@@ -146,7 +146,7 @@ docker-compose -f docker-compose.dev.yaml logs -f postiz-cloudflared
 ### Step 10: Test Your Tunnel
 
 1. Wait 10-30 seconds for the tunnel to establish
-2. Visit: https://postiz.swonger-armstrong.org
+2. Visit: https://postiz.permitpro.icu
 3. You should see your Postiz application!
 
 ---
@@ -172,7 +172,7 @@ cloudflared --version
 cloudflared tunnel login
 ```
 
-This opens a browser window. Select your domain (`swonger-armstrong.org`).
+This opens a browser window. Select your domain (`permitpro.icu`).
 
 ### Step 3: Create Tunnel
 
@@ -194,7 +194,7 @@ cp ~/.cloudflared/<TUNNEL-ID>.json /home/archie/codebase/postiz-app/cloudflared-
 
 ```bash
 # Route traffic to your tunnel
-cloudflared tunnel route dns postiz-app postiz.swonger-armstrong.org
+cloudflared tunnel route dns postiz-app postiz.permitpro.icu
 ```
 
 ### Step 5: Update Configuration
@@ -218,7 +218,7 @@ tunnel: YOUR_TUNNEL_ID
 credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-frontend:3000
   - service: http_status:404
 ```
@@ -231,19 +231,19 @@ credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
   # Main app
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-frontend:3000
     originRequest:
       noTLSVerify: true
       connectTimeout: 30s
       
   # API endpoints
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     path: /api/*
     service: http://postiz-backend:4200
     
   # WebSocket support
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     path: /ws/*
     service: http://postiz-backend:4200
     originRequest:
@@ -251,7 +251,7 @@ ingress:
       disableChunkedEncoding: true
       
   # Admin tools (optional)
-  - hostname: admin.postiz.swonger-armstrong.org
+  - hostname: admin.postiz.permitpro.icu
     service: http://postiz-pg-admin:80
     
   # Catch-all
@@ -408,7 +408,7 @@ Share your local development with team members:
 
 ```yaml
 ingress:
-  - hostname: dev.postiz.swonger-armstrong.org
+  - hostname: dev.postiz.permitpro.icu
     service: http://postiz-frontend:3000
   - service: http_status:404
 ```
@@ -417,7 +417,7 @@ ingress:
 
 ```yaml
 ingress:
-  - hostname: staging.postiz.swonger-armstrong.org
+  - hostname: staging.postiz.permitpro.icu
     service: http://postiz-frontend:3000
   - service: http_status:404
 ```
@@ -426,11 +426,11 @@ ingress:
 
 ```yaml
 ingress:
-  - hostname: app.postiz.swonger-armstrong.org
+  - hostname: app.postiz.permitpro.icu
     service: http://postiz-frontend:3000
-  - hostname: api.postiz.swonger-armstrong.org
+  - hostname: api.postiz.permitpro.icu
     service: http://postiz-backend:4200
-  - hostname: admin.postiz.swonger-armstrong.org
+  - hostname: admin.postiz.permitpro.icu
     service: http://postiz-pg-admin:80
   - service: http_status:404
 ```
@@ -449,7 +449,7 @@ ingress:
 - [ ] DNS record created (CNAME)
 - [ ] Docker services started
 - [ ] Tunnel logs checked for errors
-- [ ] Application accessible at https://postiz.swonger-armstrong.org
+- [ ] Application accessible at https://postiz.permitpro.icu
 
 ---
 
@@ -485,7 +485,7 @@ If you encounter issues:
 
 ---
 
-**Your application will be accessible at: https://postiz.swonger-armstrong.org**
+**Your application will be accessible at: https://postiz.permitpro.icu**
 
 Enjoy secure, zero-configuration external access to your Postiz application! 🎉
 

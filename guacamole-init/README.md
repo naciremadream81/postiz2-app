@@ -30,7 +30,7 @@ A default admin user `guacadmin` has been created with full administrative permi
 
 ## Accessing Guacamole
 
-- URL: https://guac.swonger-armstrong.org
+- URL: https://guac.permitpro.icu
 - Default username: `guacadmin`
 - Default password: Check with your administrator or create a new user through the web interface
 

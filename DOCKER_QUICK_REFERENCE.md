@@ -267,10 +267,10 @@ docker logs postiz-cloudflared | grep -i "connection.*registered"
 ### Test Tunnel
 ```bash
 # Test external access
-curl https://postiz.swonger-armstrong.org
+curl https://postiz.permitpro.icu
 
 # Test with verbose output
-curl -v https://postiz.swonger-armstrong.org
+curl -v https://postiz.permitpro.icu
 ```
 
 ### Troubleshooting Tunnel

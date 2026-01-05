@@ -10,7 +10,7 @@ services:
       # Docker provider configuration
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      # "--providers.docker.network=postiz-network"
+      - "--providers.docker.network=web-proxy"
       # Entrypoints - Only HTTP since Cloudflare Tunnel handles TLS
       - "--entrypoints.web.address=:80"
       # Logging
@@ -33,15 +33,15 @@ services:
       # Enable Traefik for this service
       - "traefik.enable=true"
       # HTTP router configuration
-      - "traefik.http.routers.postiz.rule=Host(`postiz.swonger-armstrong.org`)"
+      - "traefik.http.routers.postiz.rule=Host(`postiz.permitpro.icu`)"
       - "traefik.http.routers.postiz.entrypoints=web"
       - "traefik.http.services.postiz.loadbalancer.server.port=5000"
       - "traefik.docker.network=web-proxy"
     environment:
       # === Required Settings
-      MAIN_URL: "https://postiz.swonger-armstrong.org"
-      FRONTEND_URL: "https://postiz.swonger-armstrong.org"
-      NEXT_PUBLIC_BACKEND_URL: "https://postiz.swonger-armstrong.org/api"
+      MAIN_URL: "https://postiz.permitpro.icu"
+      FRONTEND_URL: "https://postiz.permitpro.icu"
+      NEXT_PUBLIC_BACKEND_URL: "https://postiz.permitpro.icu/api"
       JWT_SECRET: "8ca2fc8743ed00c9a65d3f71324e2923c47dd185e2e90e8d66e2a286d1e72040"
       DATABASE_URL: "postgresql://postiz-user:postiz-password@postiz-postgres:5432/postiz-db-local"
       REDIS_URL: "redis://postiz-redis:6379"
@@ -102,10 +102,10 @@ services:
       NEXT_PUBLIC_POSTIZ_OAUTH_DISPLAY_NAME: "Authentik"
       NEXT_PUBLIC_POSTIZ_OAUTH_LOGO_URL: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/authentik.png"
       POSTIZ_GENERIC_OAUTH: "false"
-      POSTIZ_OAUTH_URL: "${POSTIZ_OAUTH_URL:-https://authentik.swonger-armstrong.org}"
-      POSTIZ_OAUTH_AUTH_URL: "${POSTIZ_OAUTH_AUTH_URL:-https://authentik.swonger-armstrong.org/application/o/authorize}"
-      POSTIZ_OAUTH_TOKEN_URL: "${POSTIZ_OAUTH_TOKEN_URL:-https://authentik.swonger-armstrong.org/application/o/token}"
-      POSTIZ_OAUTH_USERINFO_URL: "${POSTIZ_OAUTH_USERINFO_URL:-https://authentik.swonger-armstrong.org/application/o/userinfo}"
+      POSTIZ_OAUTH_URL: "${POSTIZ_OAUTH_URL:-https://authentik.permitpro.icu}"
+      POSTIZ_OAUTH_AUTH_URL: "${POSTIZ_OAUTH_AUTH_URL:-https://authentik.permitpro.icu/application/o/authorize}"
+      POSTIZ_OAUTH_TOKEN_URL: "${POSTIZ_OAUTH_TOKEN_URL:-https://authentik.permitpro.icu/application/o/token}"
+      POSTIZ_OAUTH_USERINFO_URL: "${POSTIZ_OAUTH_USERINFO_URL:-https://authentik.permitpro.icu/application/o/userinfo}"
       POSTIZ_OAUTH_CLIENT_ID: "${POSTIZ_OAUTH_CLIENT_ID:-}"
       POSTIZ_OAUTH_CLIENT_SECRET: "${POSTIZ_OAUTH_CLIENT_SECRET:-}"
       # POSTIZ_OAUTH_SCOPE: "openid profile email"  # Optional: uncomment to override default scope
@@ -156,11 +156,12 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: postiz-cloudflared
     restart: unless-stopped
-    command: tunnel --config /etc/cloudflared/config.yaml run
+    command: tunnel --config /etc/cloudflared/config.yaml --no-autoupdate run
     volumes:
       - ./cloudflare-tunnel-config.yaml:/etc/cloudflared/config.yaml:ro
     networks:
       - postiz-network
+      - web-proxy
     depends_on:
       - traefik
     logging:
@@ -177,23 +178,23 @@ services:
       # Enable Traefik for this service
       - "traefik.enable=true"
       # HTTP router configuration
-      - "traefik.http.routers.n8n.rule=Host(`n8n.swonger-armstrong.org`)"
+      - "traefik.http.routers.n8n.rule=Host(`n8n.permitpro.icu`)"
       - "traefik.http.routers.n8n.entrypoints=web"
       - "traefik.http.services.n8n.loadbalancer.server.port=5678"
       - "traefik.docker.network=web-proxy"
       # Reverse proxy headers for n8n
       - "traefik.http.routers.n8n.middlewares=n8n-headers"
       - "traefik.http.middlewares.n8n-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
-      - "traefik.http.middlewares.n8n-headers.headers.customrequestheaders.X-Forwarded-Host=n8n.swonger-armstrong.org"
+      - "traefik.http.middlewares.n8n-headers.headers.customrequestheaders.X-Forwarded-Host=n8n.permitpro.icu"
       - "traefik.http.middlewares.n8n-headers.headers.sslredirect=false"
     environment:
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-      - N8N_HOST=n8n.swonger-armstrong.org
+      - N8N_HOST=n8n.permitpro.icu
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
       - N8N_RUNNERS_ENABLED=true
       - NODE_ENV=production
-      - WEBHOOK_URL=https://n8n.swonger-armstrong.org/
+      - WEBHOOK_URL=https://n8n.permitpro.icu/
       - GENERIC_TIMEZONE=America/New_York
       - TZ=America/New_York
     volumes:
@@ -202,6 +203,8 @@ services:
     networks:
       - postiz-network
       - web-proxy
+    depends_on:
+      - traefik
 
   # ---------------------------------------------------------------------------
   # Guacamole - Clientless Remote Desktop Gateway
@@ -226,9 +229,10 @@ services:
       retries: 3
 
   guacd:
-    image: guacamole/guacd:1.5.5
+    image: guacamole/guacd:1.6.0
     container_name: postiz-guacd
     restart: unless-stopped
+    # Version 1.6.0+ should support ARM64, but if it fails, QEMU emulation may be needed
     volumes:
       - guacamole-drive:/drive
       - guacamole-record:/record
@@ -236,24 +240,32 @@ services:
       - postiz-network
 
   guacamole:
-    image: guacamole/guacamole:1.5.5
+    image: guacamole/guacamole:1.6.0
     container_name: postiz-guacamole
     restart: unless-stopped
+    # Version 1.6.0+ should support ARM64, but if it fails, QEMU emulation may be needed
     labels:
       # Enable Traefik for this service
       - "traefik.enable=true"
       # HTTP router configuration
-      - "traefik.http.routers.guacamole.rule=Host(`guac.swonger-armstrong.org`)"
+      - "traefik.http.routers.guacamole.rule=Host(`guac.permitpro.icu`)"
       - "traefik.http.routers.guacamole.entrypoints=web"
       - "traefik.http.services.guacamole.loadbalancer.server.port=8080"
       - "traefik.docker.network=web-proxy"
-      # Reverse proxy headers and path rewrite (map / to /guacamole/)
-      - "traefik.http.routers.guacamole.middlewares=guacamole-headers,guacamole-addprefix"
+      # Reverse proxy headers for Guacamole
+      # Note: Guacamole serves from /guacamole/ path internally
+      - "traefik.http.routers.guacamole.middlewares=guacamole-headers"
       - "traefik.http.middlewares.guacamole-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
-      - "traefik.http.middlewares.guacamole-headers.headers.customrequestheaders.X-Forwarded-Host=guac.swonger-armstrong.org"
+      - "traefik.http.middlewares.guacamole-headers.headers.customrequestheaders.X-Forwarded-Host=guac.permitpro.icu"
       - "traefik.http.middlewares.guacamole-headers.headers.sslredirect=false"
-      # Add /guacamole prefix to all requests (Guacamole serves at /guacamole/)
-      - "traefik.http.middlewares.guacamole-addprefix.addprefix.prefix=/guacamole"
+      # Redirect root path to /guacamole/ (for when Cloudflare path restriction is removed)
+      - "traefik.http.routers.guacamole-root.rule=Host(`guac.permitpro.icu`) && PathPrefix(`/`) && !PathPrefix(`/guacamole`)"
+      - "traefik.http.routers.guacamole-root.entrypoints=web"
+      - "traefik.http.routers.guacamole-root.priority=20"
+      - "traefik.http.routers.guacamole-root.middlewares=guacamole-redirect-root"
+      - "traefik.http.middlewares.guacamole-redirect-root.redirectregex.regex=^https?://guac.permitpro.icu/?$$"
+      - "traefik.http.middlewares.guacamole-redirect-root.redirectregex.replacement=https://guac.permitpro.icu/guacamole/"
+      - "traefik.http.middlewares.guacamole-redirect-root.redirectregex.permanent=true"
     environment:
       GUACD_HOSTNAME: guacd
       GUACD_PORT: 4822
@@ -288,7 +300,7 @@ services:
     networks:
       - postiz-network
     healthcheck:
-      test: pg_isready -U postiz-user -d postiz-db-local
+      test: ["CMD-SHELL", "pg_isready -U postiz-user -d postiz-db-local"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -297,7 +309,7 @@ services:
     container_name: postiz-redis
     restart: always
     healthcheck:
-      test: redis-cli ping
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3

@@ -1,6 +1,6 @@
 # 🎉 Cloudflare Tunnel Integration Complete!
 
-**Your Application URL**: https://postiz.swonger-armstrong.org  
+**Your Application URL**: https://postiz.permitpro.icu  
 **Status**: ✅ Ready to Configure  
 **Date**: October 10, 2025
 
@@ -12,7 +12,7 @@ I've successfully integrated Cloudflare Tunnel into your Postiz Docker setup! Yo
 
 ### Key Features Implemented
 
-✅ **Secure External Access** - Access your app at https://postiz.swonger-armstrong.org  
+✅ **Secure External Access** - Access your app at https://postiz.permitpro.icu  
 ✅ **Zero Port Forwarding** - No need to open ports on your firewall  
 ✅ **Free SSL/TLS** - Automatic HTTPS certificates from Cloudflare  
 ✅ **DDoS Protection** - Built-in protection from Cloudflare's network  
@@ -115,7 +115,7 @@ In the tunnel configuration:
 2. Click: **"Add a public hostname"**
 3. Fill in:
    - **Subdomain**: `postiz`
-   - **Domain**: `swonger-armstrong.org`
+   - **Domain**: `permitpro.icu`
    - **Service Type**: `HTTP`
    - **URL**: `postiz-frontend:3000`
 4. Click: **"Save hostname"**
@@ -172,7 +172,7 @@ docker logs -f postiz-cloudflared
 
 #### Step 9: Test It!
 
-Open your browser: **https://postiz.swonger-armstrong.org**
+Open your browser: **https://postiz.permitpro.icu**
 
 ---
 
@@ -220,7 +220,7 @@ Your Services (postiz-frontend, postiz-backend, etc.)
 Routes all traffic to your frontend:
 ```yaml
 ingress:
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-frontend:3000
   - service: http_status:404
 ```
@@ -240,7 +240,7 @@ See `CLOUDFLARE_TUNNEL_SETUP.md` for examples of:
 ## 📈 Benefits You Get
 
 ### Immediate Benefits
-- ✅ **Public URL**: https://postiz.swonger-armstrong.org
+- ✅ **Public URL**: https://postiz.permitpro.icu
 - ✅ **Free SSL**: Automatic HTTPS certificates
 - ✅ **Zero Config**: No port forwarding or firewall rules
 - ✅ **Secure**: No exposed ports = smaller attack surface
@@ -283,7 +283,7 @@ curl http://localhost:9090/metrics
 
 ## 🆘 Quick Troubleshooting
 
-### Issue: Can't access https://postiz.swonger-armstrong.org
+### Issue: Can't access https://postiz.permitpro.icu
 
 **Check:**
 ```bash
@@ -367,7 +367,7 @@ ls -la cloudflared-credentials.json
 - [ ] Download credentials
 - [ ] Update configuration files
 - [ ] Start services
-- [ ] Test access at https://postiz.swonger-armstrong.org
+- [ ] Test access at https://postiz.permitpro.icu
 
 ### This Week (Optimize)
 - [ ] Add authentication via Cloudflare Access
@@ -387,7 +387,7 @@ ls -la cloudflared-credentials.json
 
 Your Postiz application is now accessible at:
 
-# 🌐 https://postiz.swonger-armstrong.org
+# 🌐 https://postiz.permitpro.icu
 
 With:
 - ✅ Free SSL/TLS certificates
@@ -444,7 +444,7 @@ docker-compose -f docker-compose.dev.yaml restart postiz-cloudflared
 4. Start services
 
 **Expected Result**:
-Your app accessible at https://postiz.swonger-armstrong.org with enterprise-grade security and performance!
+Your app accessible at https://postiz.permitpro.icu with enterprise-grade security and performance!
 
 ---
 

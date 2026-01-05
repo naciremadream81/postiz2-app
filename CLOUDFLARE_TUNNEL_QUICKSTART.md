@@ -3,11 +3,11 @@
 ## 🚀 5-Minute Setup
 
 ### What You Get
-Your Postiz app will be accessible at: **https://postiz.swonger-armstrong.org**
+Your Postiz app will be accessible at: **https://postiz.permitpro.icu**
 
 ### Prerequisites
 - ✅ Cloudflare account (free)
-- ✅ Domain `swonger-armstrong.org` added to Cloudflare
+- ✅ Domain `permitpro.icu` added to Cloudflare
 - ✅ Docker running
 
 ---
@@ -35,7 +35,7 @@ In the tunnel page:
 2. Click: "Add a public hostname"
 3. Fill in:
    - Subdomain: postiz
-   - Domain: swonger-armstrong.org
+   - Domain: permitpro.icu
    - Service Type: HTTP
    - URL: postiz-frontend:3000
 4. Click: "Save hostname"
@@ -126,7 +126,7 @@ docker logs -f postiz-cloudflared
 
 ### 9. Test It!
 
-Open in browser: **https://postiz.swonger-armstrong.org**
+Open in browser: **https://postiz.permitpro.icu**
 
 ---
 
@@ -221,7 +221,7 @@ tunnel: your-tunnel-id
 credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-frontend:3000
   - service: http_status:404
 ```
@@ -234,11 +234,11 @@ credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
   # Main app
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-frontend:3000
     
   # API (path-based routing)
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     path: /api/*
     service: http://postiz-backend:4200
     
@@ -254,11 +254,11 @@ credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
   # Main app
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-frontend:3000
     
   # Admin panel
-  - hostname: admin.postiz.swonger-armstrong.org
+  - hostname: admin.postiz.permitpro.icu
     service: http://postiz-pg-admin:80
     
   # Catch-all
@@ -283,7 +283,7 @@ In Cloudflare dashboard:
 1. Go to: Zero Trust → Access → Applications
 2. Click: "Add an application"
 3. Select: "Self-hosted"
-4. Set: postiz.swonger-armstrong.org
+4. Set: postiz.permitpro.icu
 5. Choose: Authentication method (Google, email, etc.)
 ```
 
@@ -379,7 +379,7 @@ Once working:
 
 ---
 
-**Your URL**: https://postiz.swonger-armstrong.org
+**Your URL**: https://postiz.permitpro.icu
 
 Enjoy secure access to your Postiz application! 🚀
 

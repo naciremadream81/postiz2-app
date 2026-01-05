@@ -43,7 +43,7 @@ fi
 
 # Check tunnel
 echo -e "${YELLOW}Testing tunnel...${NC}"
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://postiz.swonger-armstrong.org 2>/dev/null || echo "000")
+RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://postiz.permitpro.icu 2>/dev/null || echo "000")
 
 if [ "$RESPONSE" = "502" ]; then
     echo -e "${YELLOW}⚠ Tunnel returns 502 (using wrong config)${NC}"
@@ -78,7 +78,7 @@ echo ""
 echo "     ${YELLOW}Configuration:${NC}"
 echo "     ┌─────────────────────────────────────┐"
 echo "     │ Subdomain:  postiz                  │"
-echo "     │ Domain:     swonger-armstrong.org   │"
+echo "     │ Domain:     permitpro.icu   │"
 echo "     │ Path:       (leave empty)           │"
 echo "     │                                     │"
 echo "     │ Service:                            │"
@@ -96,7 +96,7 @@ echo ""
 echo "  The tunnel will automatically pick up the new config within 1-2 minutes."
 echo ""
 echo "  Test with:"
-echo "  ${BLUE}curl -I https://postiz.swonger-armstrong.org${NC}"
+echo "  ${BLUE}curl -I https://postiz.permitpro.icu${NC}"
 echo ""
 echo "  Expected: ${GREEN}HTTP/2 200 OK${NC} or ${GREEN}HTTP/2 307${NC}"
 echo ""
@@ -107,7 +107,7 @@ echo -e "${BLUE}========================================${NC}"
 echo ""
 echo "If you prefer CLI, you can delete the dashboard config:"
 echo ""
-echo "  ${BLUE}cloudflared tunnel route dns --overwrite-dns postiz-app postiz.swonger-armstrong.org${NC}"
+echo "  ${BLUE}cloudflared tunnel route dns --overwrite-dns postiz-app postiz.permitpro.icu${NC}"
 echo ""
 echo "Then restart the tunnel to force it to use the local config file."
 echo ""

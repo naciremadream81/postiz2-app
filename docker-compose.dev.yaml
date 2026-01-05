@@ -184,7 +184,7 @@ services:
     labels:
       com.postiz.description: "Cloudflare Tunnel for secure external access"
       com.postiz.environment: "development"
-      com.postiz.tunnel: "postiz.swonger-armstrong.org"
+      com.postiz.tunnel: "postiz.permitpro.icu"
 
   # ---------------------------------------------------------------------------
   # Test Service - Simple HTTP service for testing tunnel connectivity
@@ -201,7 +201,7 @@ services:
       # Enable Traefik for this service
       - "traefik.enable=true"
       # HTTP router configuration
-      - "traefik.http.routers.whoami.rule=Host(`postiz.swonger-armstrong.org`)"
+      - "traefik.http.routers.whoami.rule=Host(`postiz.permitpro.icu`)"
       - "traefik.http.routers.whoami.entrypoints=web"
       - "traefik.http.services.whoami.loadbalancer.server.port=80"
       # Metadata

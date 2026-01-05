@@ -14,20 +14,20 @@ token: YOUR_TUNNEL_TOKEN_HERE
 # Rules are evaluated top to bottom, first match wins
 ingress:
   # Route postiz domain to Traefik
-  - hostname: postiz.swonger-armstrong.org
+  - hostname: postiz.permitpro.icu
     service: http://postiz-traefik:80
     originRequest:
       noTLSVerify: true
       connectTimeout: 30s
-      httpHostHeader: postiz.swonger-armstrong.org
+      httpHostHeader: postiz.permitpro.icu
   
   # Route n8n domain to Traefik
-  - hostname: n8n.swonger-armstrong.org
+  - hostname: n8n.permitpro.icu
     service: http://postiz-traefik:80
     originRequest:
       noTLSVerify: true
       connectTimeout: 30s
-      httpHostHeader: n8n.swonger-armstrong.org
+      httpHostHeader: n8n.permitpro.icu
   
   # Catch-all rule (required as last rule)
   - service: http_status:404
